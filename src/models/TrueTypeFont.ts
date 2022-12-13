@@ -245,6 +245,9 @@ class TrueTypeFont {
   get yMax() {
     return (this.tables.head as HeadTable).yMax ?? 0
   }
+  get BBox() {
+    return [this.xMin, this.yMin, this.xMax, this.yMax]
+  }
   get ascent() {
     return (this.tables.hhea as any).ascent ?? 0
   }
