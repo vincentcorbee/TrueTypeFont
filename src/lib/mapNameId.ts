@@ -1,65 +1,72 @@
 const mapNameId = (id: number) => {
   const names: any = {
     0: {
-      name: "Copyright"
+      name: 'Copyright',
     },
     1: {
-      name: "FontFamily"
+      name: 'FontFamily',
     },
     2: {
-      name: "FontSubfamily"
+      name: 'FontSubfamily',
     },
     3: {
-      name: "UniqueSubfamily"
+      name: 'UniqueSubfamily',
     },
     4: {
-      name: "FullName"
+      name: 'FullName',
     },
     5: {
-      name: "Version"
+      name: 'Version',
     },
     6: {
-      name: "PostScriptName"
+      name: 'PostScriptName',
     },
     7: {
-      name: "Trademark"
+      name: 'Trademark',
     },
     8: {
-      name: "ManufacturerName"
+      name: 'ManufacturerName',
     },
     9: {
-      name: "DesignerName"
+      name: 'DesignerName',
     },
     10: {
-      name: "Description"
+      name: 'Description',
     },
     11: {
-      name: "VendorURL"
+      name: 'VendorURL',
     },
     12: {
-      name: "DesignerURL"
+      name: 'DesignerURL',
     },
     13: {
-      name: "LicenseDescription"
+      name: 'LicenseDescription',
     },
     14: {
-      name: "LicenseURL"
+      name: 'LicenseURL',
     },
     16: {
-      name: "PreferredFamily"
+      name: 'PreferredFamily',
     },
     17: {
-      name: "PreferredSubfamily"
-    }
-  };
-
-  const name = names[id];
-
-  if (name) {
-    name.id = id;
+      name: 'PreferredSubfamily',
+    },
+    18: {
+      name: 'CompatibleFull',
+    },
+    19: {
+      name: 'SampleText',
+    },
+    25: {
+      name: 'VariationsPostScriptNamePrefix',
+    },
   }
 
-  return name;
-};
+  const name = names[id]
+
+  if (name) name.id = id
+
+  return name
+}
 
 export default mapNameId

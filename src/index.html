@@ -1,111 +1,123 @@
 <!DOCTYPE html>
 <html lang="nl">
-	<head>
-    <meta charset="utf-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-      <meta name="viewport" content="width=device-width">
-		<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
-		<title></title>
-		<style>
-			*{
-				box-sizing: border-box;
-			}
-			html {
-				font-size: 62.5%;
-				font-family: 'Roboto';
-			}
-			body{
-			    margin:0;
-			    padding:0;
-					background-color: #f1f1f1;
-          flex-direction: column;
-          height: 100vh;
-          width: 100vw;
-			}
-			.container {
-				padding: 50px;
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,700"
+      rel="stylesheet"
+    />
+    <title></title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 62.5%;
+        font-family: 'Roboto';
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f1f1f1;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+      }
+      .top {
+        padding: 32px;
+        padding-bottom: 0;
+      }
+      .container {
+        padding: 32px;
         overflow: scroll;
-			}
-			.flex {
-				display: flex
-			}
+      }
+      .flex {
+        display: flex;
+      }
       .vcenter {
         align-items: center;
       }
-			.icon {
-				/* width: 50px; */
-				min-width: 100px;
-				min-height: 75px;
-				background-color:#ffffff;
-				margin-right: 5px;
-				margin-bottom: 5px;
-				cursor: pointer;
-				padding: 10px;
-				position: relative;
-			}
+      .icon {
+        /* width: 50px; */
+        min-width: 100px;
+        min-height: 75px;
+        background-color: #ffffff;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        padding: 10px;
+        position: relative;
+      }
       .inputarea label {
         font-size: 1.2rem;
         font-weight: 700;
         min-width: 150px;
       }
-			.details {
-				font-size: 1.2rem;
-				display: none;
-				position: absolute;
-				z-index: 1;
-				background-color: #ffffff;
-				padding: 10px;
-				box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-				white-space: nowrap;
-			}
-			.details > div:not(:last-of-type) {
-				margin-bottom: 10px;
-			}
-			.icon:hover .details {
-				display: block;
-			}
-			.details .label {
-				width: 75px;
-				font-weight: 700;
-			}
-			path {
-				fill: #009;
-				stroke-linecap: butt;
-			}
-			svg {
-				display: block;
-				/* height: 100%; */
-				margin: 0 auto;
-			}
-			#fontsContainer {
-				flex-wrap: wrap;
+      .details {
+        font-size: 1.2rem;
+        display: none;
+        position: absolute;
+        z-index: 1;
+        background-color: #ffffff;
+        padding: 10px;
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+        white-space: nowrap;
+      }
+      .details > div:not(:last-of-type) {
+        margin-bottom: 10px;
+      }
+      .icon:hover .details {
+        display: block;
+      }
+      .details .label {
+        width: 75px;
+        font-weight: 700;
+      }
+      path {
+        fill: #009;
+        stroke-linecap: butt;
+      }
+      svg {
+        display: block;
+        /* height: 100%; */
+        margin: 0 auto;
+      }
+      #fontsContainer {
+        flex-wrap: wrap;
         flex: 1;
-        overflow:scroll;
-			}
-			#fontContainer {
-				/* width: 200px; */
-				margin: 0 auto;
-			}
-			#fontContainer .details {
-				display: block;
-				position: static;
-				box-shadow: none;
-				width: 100%;
-				font-size: 1.4rem;
-			}
-			#fontContainer .details > div:not(:last-of-type) {
-				margin-bottom: 10px;
-			}
-			#fontContainer .details .label{
-				width: auto;
-			}
-			#fontContainer .details .label + span{
-				margin-left: auto;
-			}
-			#fontsContainer:after {
-				display: table;
-				clear: both;
-			}
+        overflow: scroll;
+      }
+      #fontContainer {
+        /* width: 200px; */
+        margin: 0 auto;
+      }
+      #fontContainer .details {
+        display: block;
+        position: static;
+        box-shadow: none;
+        width: 100%;
+        font-size: 1.4rem;
+      }
+      #fontContainer .details > div:not(:last-of-type) {
+        margin-bottom: 10px;
+      }
+      #fontContainer .details .label {
+        width: auto;
+      }
+      #fontContainer .details .label + span {
+        margin-left: auto;
+      }
+      #fontsContainer:after {
+        display: table;
+        clear: both;
+      }
+
+      .overview {
+        margin-top: 32px;
+      }
+
       .overview span {
         font-size: 1.4rem;
       }
@@ -113,34 +125,40 @@
         font-weight: 700;
         min-width: 200px;
       }
-			.fontWrapper {
-				background-color: #ffffff;
-				padding: 10px;
-				/* text-align: center; */
-				/* height: 200px; */
-				/* width: 200px; */
-			}
-		</style>
-	</head>
-	<body class='flex'>
-    <div>
-      <input type="file" id="file"/>
-    </div>
-    <div class='inputarea'>
-      <div class='flex vcenter'>
-        <label for="input">Get glyph by character</label>
-        <textarea id='input'></textarea>
+      .fontWrapper {
+        background-color: #ffffff;
+        padding: 10px;
+        /* text-align: center; */
+        /* height: 200px; */
+        /* width: 200px; */
+      }
+
+      .row:not(:last-child) {
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body class="flex">
+    <div class="top">
+      <div class="row">
+        <input type="file" id="file" />
       </div>
-      <div class='flex vcenter'>
-        <label for="unicode">Get glyph by unicode</label>
-        <input type='text' id='unicode'/>
-        <button type='button' id='unicodeButton'>Show</button>
+      <div class="inputarea row">
+        <div class="flex vcenter row">
+          <label for="input">Get glyph by character</label>
+          <textarea id="input"></textarea>
+        </div>
+        <div class="flex vcenter row">
+          <label for="unicode">Get glyph by unicode</label>
+          <input type="text" id="unicode" />
+          <button type="button" id="unicodeButton">Show</button>
+        </div>
       </div>
+      <div class="overview"></div>
     </div>
-    <div class='overview'></div>
-		<div class='container flex'>
-      <div id="fontsContainer" class='flex'></div>
-      <div class='modal'><div id="fontContainer"></div></div>
-		</div>
-	</body>
+    <div class="container flex">
+      <div id="fontsContainer" class="flex"></div>
+      <div class="modal"><div id="fontContainer"></div></div>
+    </div>
+  </body>
 </html>

@@ -2,52 +2,50 @@ const mapPlatformSpecificId = (platform: string, id: number) => {
   const identifiers: any = {
     Macintosh: {
       0: {
-        encoding: "Roman",
+        encoding: 'Roman',
       },
       1: {
-        encoding: "Japanese",
+        encoding: 'Japanese',
       },
       2: {
-        encoding: "Traditional Chinese",
+        encoding: 'Traditional Chinese',
       },
       3: {
-        encoding: "Korean",
+        encoding: 'Korean',
       },
       4: {
-        encoding: "Arabic",
+        encoding: 'Arabic',
       },
       5: {
-        encoding: "Hebrew",
+        encoding: 'Hebrew',
       },
       6: {
-        encoding: "Greek",
-      }
+        encoding: 'Greek',
+      },
     },
     Microsoft: {
       0: {
-        encoding: 'Symbol'
+        encoding: 'Symbol',
       },
       1: {
-        encoding: "Unicode BMP",
+        encoding: 'Unicode BMP',
       },
       3: {
-        encoding: "PRC",
+        encoding: 'PRC',
       },
       10: {
-        encoding: 'Unicode full repertoire'
-      }
+        encoding: 'Unicode full repertoire',
+      },
     },
     Unicode: {
       0: {
-        encoding: 'Unicode 1.0 semantics'
+        encoding: 'Unicode 1.0 semantics',
       },
       3: {
-        encoding: `Unicode 2.0 and onwards semantics, Unicode BMP only ('cmap' subtable formats 0, 4, 6)`
-      }
-    }
-  };
-
-  console.log(platform, id)
+        encoding: `Unicode 2.0 and onwards semantics, Unicode BMP only ('cmap' subtable formats 0, 4, 6)`,
+      },
+    },
+  }
 
   const platformSpecificID = identifiers[platform][id]
 
@@ -55,7 +53,7 @@ const mapPlatformSpecificId = (platform: string, id: number) => {
     platformSpecificID.id = id
   }
 
-  return platformSpecificID;
-};
+  return platformSpecificID
+}
 
 export default mapPlatformSpecificId
