@@ -2,7 +2,7 @@
   "name": "@digitalbranch/font",
   "version": "1.0.0",
   "description": "A true type font reader",
-  "main": "src/models/TrueTypeFont.ts",
+  "main": "src/modules/TrueTypeFont.ts",
   "scripts": {
     "check-types": "tsc",
     "build": "node ./build/deploy/build.js",

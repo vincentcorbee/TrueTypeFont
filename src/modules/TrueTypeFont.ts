@@ -1,188 +1,59 @@
-import BinaryReader from './BinaryReader'
+import BinaryReader from './binary-reader'
 import assert from '../lib/assert'
-import uniString from './uniString'
+import uniString from './uni-string'
 import transform from './transform'
-import mapLanguageId from '../lib/mapLanguageId'
-import mapNameId from '../lib/mapNameId'
-import mapPlatformId from '../lib/mapPlatformId'
-import mapPlatformSpecificId from '../lib/mapPlatformSpecificId'
+import mapLanguageId from '../lib/map-language-id'
+import mapNameId from '../lib/map-name-id'
+import mapPlatformId from '../lib/map-platform-id'
+import mapPlatformSpecificId from '../lib/map-platform-specific-id'
 import GLYPHS from '../lib/glyphs'
-import createCircle from '../lib/createCircle'
-import drawCurves from '../lib/drawCurves'
-
-type TableName =
-  | 'post'
-  | 'cmap'
-  | 'name'
-  | 'GSUB'
-  | 'glyf'
-  | 'head'
-  | 'hhea'
-  | 'hmtx'
-  | 'loca'
-  | 'maxp'
-  | 'OS/2'
-  | 'cvt'
-  | 'fpgm'
-  | 'hdmx'
-  | 'kern'
-  | 'prep'
-
-type RequiredTableName = Extract<
+import createCircle from '../lib/create-circle'
+import drawCurves from '../lib/draw-curves'
+import {
+  CmapSubtable4Segment,
+  Component,
+  CreateSvgOptions,
+  EncodingRecord,
+  FontDirectory,
+  FontDirectoryTableEntry,
+  Glyph,
+  GlyphIndexMap,
+  HeadTable,
+  HmtxTable,
+  LongHorMetric,
+  NameRecord,
+  NameTable,
+  Point,
+  PostTable,
   TableName,
-  'cmap' | 'glyf' | 'head' | 'hhea' | 'hmtx' | 'loca' | 'maxp' | 'name' | 'post'
->
-
-type OptionalTableName = Extract<
-  TableName,
-  'OS/2' | 'cvt' | 'pfgm' | 'hdmx' | 'kern' | 'prep' | 'GSUB'
->
-
-type OptionalTables = {
-  [key in OptionalTableName]?: any
-}
-
-type RequiredTables = {
-  [key in RequiredTableName]: any
-}
-
-type Tables = OptionalTables & RequiredTables
-
-type FontDirectory = {
-  offset: FontDirectoryOffset
-  table: FontDirectoryTable
-}
-
-type FontDirectoryOffset = {
-  scalarType: number
-  numTables: number
-  searchRange: number
-  entrySelector: number
-  rangeShift: number
-}
-type FontDirectoryTableEntry = {
-  checksum: number
-  length: number
-  offset: number
-  tag: TableName
-}
-
-type FontDirectoryTable = {
-  [key in TableName]: FontDirectoryTableEntry
-}
-
-type HeadTable = {
-  version: number
-  fontRevision: number
-  checkSumAdjustment: number
-  magicNumber: number
-  flags: number
-  unitsPerEm: number
-  created: Date
-  modified: Date
-  xMin: number
-  yMin: number
-  xMax: number
-  yMax: number
-  macStyle: number
-  lowestRecPPEM: number
-  fontDirectionHint: number
-  indexToLocFormat: number
-  glyphDataFormat: number
-}
-
-type LongHorMetric = {
-  advanceWidth: number
-  leftSideBearing: number
-}
-
-type HmtxTable = {
-  hMetrics: LongHorMetric[]
-  leftSideBearing: number[]
-}
-
-type PostTable = {
-  format: number
-  italicAngle: number
-  underlinePosition: number
-  underlineThickness: number
-  isFixedPitch: number
-  minMemType42: number
-  maxMemType42: number
-  minMemType1: number
-  maxMemType1: number
-  numberOfGlyphs?: number
-  glyphNameIndex?: number[]
-  names?: PostTableName[]
-}
-
-type PostTableName = {
-  name: string
-  index: number
-}
-
-type CreateSvgOptions = {
-  fontSize?: number
-  useBB?: boolean
-  showPoints?: boolean
-  showLines?: boolean
-}
-
-type Glyph = {
-  advanceWidth: number
-  leftSideBearing: number
-  unicode: string
-  numberOfContours: number
-  type?: 'compound' | 'simple'
-  components?: Component[]
-  instructions?: number[]
-  endPtsOfContours?: number[]
-  points?: { onCurve: boolean }[]
-  name: string
-  xMax: number
-  xMin: number
-  yMax: number
-  yMin: number
-}
-
-type Component = {
-  glyphIndex: number
-  overlap: number
-  destPointIndex?: number
-  srcPointIndex?: number
-  matrix: {
-    a: number
-    b: number
-    c: number
-    d: number
-    e: number
-    f: number
-  }
-}
+  Tables,
+} from '../types'
+import { readFontDirectory } from '../lib'
 
 class TrueTypeFont {
   numGlyphs: number
   fontDirectory: FontDirectory
   tables: Tables
 
-  // private platformID: number
-  // private platformSpecificID: number
-  // private languageID: number
+  private platformID: number
+  private platformSpecificID: number
+  private languageID: number
   private reader: BinaryReader
 
   constructor(arrayBuffer: ArrayBuffer) {
     this.reader = new BinaryReader(arrayBuffer)
 
-    this.fontDirectory = this.readFontDirectory()
+    this.fontDirectory = readFontDirectory(this.reader)
 
     this.tables = this.readTables()
 
     this.numGlyphs = this.getNumGlyphs()
 
     // Platform settings
-    // this.platformID = 3 // Microsoft
-    // this.platformSpecificID = 10 // Unicode
-    // this.languageID = 0x0409 // English United States
+
+    this.platformID = 3 // Microsoft
+    this.platformSpecificID = 10 // Unicode
+    this.languageID = 0x0409 // English United States
   }
 
   get buffer() {
@@ -190,15 +61,27 @@ class TrueTypeFont {
   }
 
   get fontFamily() {
-    return this.tables.name.nameRecords.find(
-      (record: any) => record.nameID.name === 'FontFamily'
-    ).nameID.value
+    return (this.tables.name as NameTable).nameRecords.find(
+      record => record.nameID.name === 'FontFamily'
+    )?.nameID.value
+  }
+
+  get fontSubfamily() {
+    return (this.tables.name as NameTable).nameRecords.find(
+      record => record.nameID.name === 'FontSubfamily'
+    )?.nameID.value
   }
 
   get postScriptName() {
-    return this.tables.name.nameRecords.find(
-      (record: any) => record.nameID.name === 'PostScriptName'
-    ).nameID.value
+    return (this.tables.name as NameTable).nameRecords.find(
+      record => record.nameID.name === 'PostScriptName'
+    )?.nameID.value
+  }
+
+  get fullName() {
+    return (this.tables.name as NameTable).nameRecords.find(
+      record => record.nameID.name === 'FullName'
+    )?.nameID.value
   }
 
   get version() {
@@ -212,66 +95,87 @@ class TrueTypeFont {
   get checkSumAdjustment() {
     return (this.tables.head as HeadTable).checkSumAdjustment ?? 0
   }
+
   get magicNumber() {
     return (this.tables.head as HeadTable).checkSumAdjustment ?? 0
   }
+
   get flags() {
     return (this.tables.head as HeadTable).flags ?? 0
   }
+
   get italicAngle() {
     return (this.tables.post as PostTable).italicAngle ?? 0
   }
+
   get isFixedPitch() {
     return (this.tables.post as PostTable).isFixedPitch ?? 0
   }
+
   get unitsPerEm() {
     return (this.tables.head as HeadTable).unitsPerEm ?? 0
   }
+
   get created() {
     return (this.tables.head as HeadTable).created
   }
+
   get modified() {
     return (this.tables.head as HeadTable).modified
   }
+
   get xMin() {
     return (this.tables.head as HeadTable).xMin ?? 0
   }
+
   get yMin() {
     return (this.tables.head as HeadTable).yMin ?? 0
   }
+
   get xMax() {
     return (this.tables.head as HeadTable).xMax ?? 0
   }
+
   get yMax() {
     return (this.tables.head as HeadTable).yMax ?? 0
   }
+
   get BBox() {
     return [this.xMin, this.yMin, this.xMax, this.yMax]
   }
+
   get ascent() {
     return (this.tables.hhea as any).ascent ?? 0
   }
+
   get descent() {
     return (this.tables.hhea as any).descent ?? 0
   }
+
   get xHeight() {
     return (this.tables['OS/2'] as any).sxHeight ?? 0
   }
+
   get capHeight() {
     return (this.tables['OS/2'] as any).sCapHeight ?? 0
   }
+
   get macStyle() {
     return (this.tables.head as HeadTable).macStyle ?? 0
   }
+
   get lowestRecPPEM() {
     return (this.tables.head as HeadTable).lowestRecPPEM ?? 0
   }
+
   get fontDirectionHint() {
     return (this.tables.head as HeadTable).fontDirectionHint ?? 0
   }
+
   get indexToLocFormat() {
     return (this.tables.head as HeadTable).indexToLocFormat ?? 0
   }
+
   get glyphDataFormat() {
     return (this.tables.head as HeadTable).glyphDataFormat ?? 0
   }
@@ -362,7 +266,9 @@ class TrueTypeFont {
     }
 
     if (postTable.format === 1) {
-    } else if (postTable.format === 2) {
+    }
+
+    if (postTable.format === 2) {
       const numberOfGlyphs = reader.getUint16()
       const glyphNameIndex = []
       const names = []
@@ -416,7 +322,7 @@ class TrueTypeFont {
     const format = reader.getUint16()
     const count = reader.getUint16()
     const stringOffset = reader.getUint16()
-    const nameRecords = []
+    const nameRecords: NameRecord[] = []
 
     for (let i = 0; i < count; i += 1) {
       const platformId = mapPlatformId(reader.getUint16())
@@ -430,9 +336,7 @@ class TrueTypeFont {
       const length = reader.getUint16()
       const offset = reader.getUint16()
 
-      const previousPosition = reader.pos
-
-      reader.seek(table.offset + stringOffset + offset)
+      const previousPosition = reader.seek(table.offset + stringOffset + offset)
 
       nameID.value = reader.getString(length)
 
@@ -453,7 +357,7 @@ class TrueTypeFont {
       count,
       stringOffset,
       nameRecords,
-    }
+    } as NameTable
   }
 
   private readOS2Table(table: FontDirectoryTableEntry) {
@@ -546,7 +450,7 @@ class TrueTypeFont {
       numberSubtables,
     }
 
-    // Currently only format 0 and 12 are implemented
+    // Currently only format 0, 4, 6 and 12 are implemented
 
     for (let i = 0; i < numberSubtables; i += 1) {
       const platformID = mapPlatformId(reader.getUint16())
@@ -556,99 +460,141 @@ class TrueTypeFont {
       )
       const offset = reader.getUint32()
 
-      const old = reader.seek(table.offset + offset)
+      const previousPosition = reader.seek(table.offset + offset)
 
-      const glyphIndexMap: any = {}
       const format = reader.getUint16()
-      const record: any = {
+
+      const encodingRecord: EncodingRecord = {
         platformID,
         platformSpecificID,
         offset,
-        format,
-        glyphIndexMap,
       }
 
-      if (format === 0) {
-        record.length = reader.getUint16()
-        record.language = reader.getUint16()
+      // console.log({ format, encodingRecord })
 
+      if (format === 0) {
         const glyphIndexArray = []
 
         for (let i = 0; i < 256; i += 1) {
           glyphIndexArray.push(reader.getUint8())
         }
 
-        record.glyphIndexArray = glyphIndexArray
+        encodingRecords.push({
+          ...encodingRecord,
+          format,
+          length: reader.getUint16(),
+          language: reader.getUint16(),
+          glyphIndexArray,
+        })
       }
 
       if (format === 4) {
-        record.length = reader.getUint16()
-        record.language = reader.getUint16()
-
-        const segments = []
+        const length = reader.getUint16()
+        const language = reader.getUint16()
         const segCountX2 = reader.getUint16()
         const searchRange = reader.getUint16()
         const entrySelector = reader.getUint16()
         const rangeShift = reader.getUint16()
 
-        record.segCount = segCountX2 / 2
+        const segCount = segCountX2 / 2
+        const glyphIndexMap: GlyphIndexMap = {}
+        const segments: CmapSubtable4Segment[] = []
 
-        for (let i = 0; i < record.segCount; i += 1) {
-          segments.push({
+        const endCodeOffset = reader.tell()
+        const startCodeOffset = endCodeOffset + segCountX2 + 2
+        const idDeltaOffset = startCodeOffset + segCountX2
+        const idRangeOffsetPosition = idDeltaOffset + segCountX2
+
+        for (let i = 0; i < segCount; i += 1) {
+          const segment = {
             endCode: reader.getUint16(),
-          })
-        }
+            startCode: reader.goTo(startCodeOffset + i * 2).getUint16(),
+            idDelta: reader.goTo(idDeltaOffset + i * 2).getUint16(),
+            idRangeOffset: reader.goTo(idRangeOffsetPosition + i * 2).getUint16(),
+          }
 
-        reader.seek(reader.tell() + 2)
+          const { endCode, idDelta, startCode, idRangeOffset } = segment
 
-        for (let i = 0; i < record.segCount; i += 1) {
-          ;(segments[i] as any).startCode = reader.getUint16()
-        }
-
-        for (let i = 0; i < record.segCount; i += 1) {
-          ;(segments[i] as any).idDelta = reader.getUint16()
-        }
-
-        for (let i = 0; i < record.segCount; i += 1) {
-          ;(segments[i] as any).idRangeOffset = reader.getUint16()
-        }
-
-        record.segments = segments
-
-        record.segments.forEach((segment: any) => {
-          let c = segment.startCode
-          let e = segment.endCode
+          let charCode = startCode
 
           do {
-            if (segment.idRangeOffset === 0) {
-              glyphIndexMap[c] = (segment.idDelta + c) % 65536
+            if (idRangeOffset === 0) {
+              glyphIndexMap[charCode] = (idDelta + charCode) % 65536
             } else {
-              //
+              reader.seek(
+                idRangeOffsetPosition +
+                  segCountX2 +
+                  (i - segCount + idRangeOffset / 2 + (charCode - startCode)) * 2
+              )
+
+              glyphIndexMap[charCode] = (reader.getUint16() + idDelta) % 65536
             }
-            c += 1
-          } while (c <= e)
+
+            charCode += 1
+          } while (charCode <= endCode)
+
+          segments.push(segment)
+
+          reader.seek(endCodeOffset + 2 + i * 2)
+        }
+
+        encodingRecords.push({
+          ...encodingRecord,
+          format,
+          length,
+          language,
+          glyphIndexMap,
+          segments,
+          segCountX2,
+          searchRange,
+          entrySelector,
+          rangeShift,
+          segCount,
+        })
+      }
+
+      if (format === 6) {
+        const length = reader.getUint16()
+        const language = reader.getUint16()
+        const firstCode = reader.getUint16()
+        const entryCode = reader.getUint16()
+        const glyphIndexArray = []
+
+        for (let i = 0; i < entryCode; i++) {
+          glyphIndexArray.push(reader.getUint16())
+        }
+
+        encodingRecords.push({
+          ...encodingRecord,
+          format,
+          length,
+          language,
+          firstCode,
+          entryCode,
+          glyphIndexArray,
         })
       }
 
       if (format === 12) {
-        record.reserved = reader.getUint16()
-        record.length = reader.getUint32()
-        record.language = reader.getUint32()
-        record.numGroups = reader.getUint32()
+        const reserved = reader.getUint16()
+        const length = reader.getUint32()
+        const language = reader.getUint32()
+        const numGroups = reader.getUint32()
 
-        const groups = []
+        const glyphIndexMap: GlyphIndexMap = {}
+        const groups: any[] = []
 
-        for (let i = 0; i < record.numGroups; i += 1) {
+        for (let i = 0; i < numGroups; i += 1) {
           groups.push({
             startCharCode: reader.getUint32(),
             endCharCode: reader.getUint32(),
             startGlyphID: reader.getUint32(),
           })
 
-          groups.sort((a, b) => a.startCharCode - b.startCharCode)
+          groups.sort((recordA, recordB) => recordA.startCharCode - recordB.startCharCode)
         }
 
-        groups.forEach(group => {
+        groups.forEach((group: any) => {
           let c = group.startCharCode
           let e = group.endCharCode
           let id = group.startGlyphID
@@ -661,17 +607,25 @@ class TrueTypeFont {
           } while (c <= e)
         })
 
-        record.groups = groups
+        encodingRecords.push({
+          ...encodingRecord,
+          format,
+          reserved,
+          length,
+          language,
+          numGroups,
+          glyphIndexMap,
+          groups,
+        })
       }
 
-      encodingRecords.push(record)
-
-      reader.seek(old)
+      reader.seek(previousPosition)
     }
 
     encodingRecords.sort(
-      (a, b) =>
-        a.platformID.id - b.platformID.id || a.platformSpecificID - b.platformSpecificID
+      (recordA: any, recordB: any) =>
+        recordA.platformID.id - recordB.platformID.id ||
+        recordA.platformSpecificID - recordB.platformSpecificID
     )
 
     const cmapTable = {
@@ -697,9 +651,8 @@ class TrueTypeFont {
       featureList: {},
     }
 
-    if (GSUBTable.minorVersion === 1) {
+    if (GSUBTable.minorVersion === 1)
       GSUBTable.featureVariationsOffset = reader.getUint32()
-    }
 
     // ScriptList
 
@@ -971,47 +924,6 @@ class TrueTypeFont {
     return GSUBTable
   }
 
-  private readFontDirectory() {
-    const reader = this.reader
-    const table = {} as unknown as FontDirectoryTable
-    const scalarType = reader.getUint32()
-    const numTables = reader.getUint16()
-    const searchRange = reader.getUint16()
-    const entrySelector = reader.getUint16()
-    const rangeShift = reader.getUint16()
-
-    const offset: FontDirectoryOffset = {
-      scalarType,
-      numTables,
-      searchRange,
-      entrySelector,
-      rangeShift,
-    }
-
-    for (let i = 0; i < numTables; i++) {
-      const tag = reader.getString(4) as TableName
-
-      table[tag] = {
-        tag,
-        checksum: reader.getUint32(),
-        offset: reader.getUint32(),
-        length: reader.getUint32(),
-      } as FontDirectoryTableEntry
-
-      if (tag !== 'head') {
-        assert(
-          this.calculateTableChecksum(table[tag].offset, table[tag].length) ===
-            table[tag].checksum
-        )
-      }
-    }
-
-    return {
-      offset,
-      table,
-    } as FontDirectory
-  }
-
   private readTables() {
     const { table } = this.fontDirectory
 
@@ -1084,16 +996,16 @@ class TrueTypeFont {
   }
 
   private readCoords(
-    points: any[],
+    points: Point[],
     numPoints: number,
-    name: string,
-    flags: any[],
-    byteFlag: any,
-    deltaFlag: any
+    axis: 'x' | 'y',
+    flags: number[],
+    byteFlag: number,
+    deltaFlag: number
   ) {
     let value = 0
 
-    const reader = this.reader
+    const { reader } = this
 
     for (let i = 0; i < numPoints; i++) {
       const flag = flags[i]
@@ -1108,7 +1020,7 @@ class TrueTypeFont {
         value += reader.getInt16()
       }
 
-      points[i][name] = value
+      points[i][axis] = value
     }
   }
 
@@ -1125,7 +1037,8 @@ class TrueTypeFont {
     const USE_MY_METRICS = 512
     const OVERLAP_COMPOUND = 1024
 
-    const reader = this.reader
+    const { reader } = this
+
     let flags
 
     glyph.type = 'compound'
@@ -1215,19 +1128,19 @@ class TrueTypeFont {
     glyph.type = 'simple'
     glyph.endPtsOfContours = []
     glyph.points = []
+    glyph.instructions = []
 
     for (let i = 0; i < glyph.numberOfContours; i += 1) {
       glyph.endPtsOfContours.push(reader.getUint16())
     }
 
     const instructionLength = reader.getUint16()
-    const instructions = []
 
     for (let i = 0; i < instructionLength; i += 1) {
-      instructions.push(reader.getUint8())
+      glyph.instructions.push(reader.getUint8())
     }
 
-    const numPoints = Math.max(...glyph.endPtsOfContours) + 1
+    const numPoints = glyph.endPtsOfContours[glyph.numberOfContours - 1] + 1
 
     for (let i = 0; i < numPoints; i += 1) {
       const flag = reader.getUint8()
@@ -1236,6 +1149,8 @@ class TrueTypeFont {
 
       glyph.points.push({
         onCurve: (flag & ON_CURVE) > 0,
+        x: 0,
+        y: 0,
       })
 
       if (flag & REPEAT) {
@@ -1247,23 +1162,25 @@ class TrueTypeFont {
 
         while (repeatCount--) {
           flags.push(flag)
+
           glyph.points.push({
             onCurve: (flag & ON_CURVE) > 0,
+            x: 0,
+            y: 0,
           })
         }
       }
     }
 
     this.readCoords(glyph.points, numPoints, 'x', flags, X_IS_BYTE, X_DELTA)
+
     this.readCoords(glyph.points, numPoints, 'y', flags, Y_IS_BYTE, Y_DELTA)
   }
 
-  private getUnicode(codes: any, i: number) {
+  private getUnicode(codes: any, index: number) {
     for (let code in codes) {
-      if (codes[code] === i) {
-        if (parseInt(code, 10) === 0xffff) {
-          return 'none'
-        }
+      if (codes[code] === index) {
+        if (parseInt(code, 10) === 0xffff) return 'none'
 
         code = parseInt(code).toString(16).toUpperCase()
 
@@ -1278,39 +1195,42 @@ class TrueTypeFont {
     return 'none'
   }
 
-  private getGlyphName(index: number) {
-    if (this.tables.post.names) {
-      return this.tables.post.names[index].name || ''
-    }
-
-    return ''
-  }
-
-  private getCmap() {
-    return this.tables.cmap.encodingRecords[this.tables.cmap.encodingRecords.length - 1]
-      .glyphIndexMap // .find(record => record.platformID.id === this.platformID && record.platformSpecificID.id === this.platformSpecificID).glyphIndexMap
+  private getGlyphIndexMap(): GlyphIndexMap {
+    return (
+      this.tables.cmap.encodingRecords.find(
+        (record: any) =>
+          record.platformID.id === this.platformID &&
+          record.platformSpecificID.id === this.platformSpecificID
+      )?.glyphIndexMap ??
+      this.tables.cmap.encodingRecords.find(
+        (record: any) => record.platformID.id === 0 && record.platformSpecificID.id === 3
+      )?.glyphIndexMap ??
+      this.tables.cmap.encodingRecords[this.tables.cmap.encodingRecords.length - 1]
+        .glyphIndexMap
+    )
   }
 
   private getGlyphOffset(index: number) {
-    if (index > this.numGlyphs) {
-      return { offset: null, length: 0 }
-    }
+    if (index > this.numGlyphs) return { offset: null, length: 0 }
 
     assert(this.fontDirectory.table.loca)
 
-    const table = this.fontDirectory.table.loca
+    const {
+      loca: { offset: offsetLoca },
+    } = this.fontDirectory.table
     const reader = this.reader
-    const offsetLoca = table.offset
 
     let offset = 0
     let length = 0
 
     if (this.indexToLocFormat === 1) {
       reader.seek(offsetLoca + index * 4)
+
       offset = reader.getUint32()
       length = reader.getUint32() - (index === this.numGlyphs ? 0 : offset)
     } else {
       reader.seek(offsetLoca + index * 2)
+
       offset = reader.getUint16() * 2
       length = reader.getUint16() * 2 - (index === this.numGlyphs ? 0 : offset)
     }
@@ -1320,44 +1240,55 @@ class TrueTypeFont {
     return { offset: offset + this.fontDirectory.table.glyf.offset, length }
   }
 
-  private calculateTableChecksum(offset: any, numberOfBytesInTable: number) {
-    const reader = this.reader
-    const old = reader.seek(offset)
-    let sum = 0
-    let nlongs = ((numberOfBytesInTable + 3) / 4) | 0
-
-    while (nlongs--) {
-      sum = ((sum + reader.getUint32()) & 0xffffffff) >>> 0
-    }
-
-    reader.seek(old)
-
-    return sum
+  private getGlyphName(index: number) {
+    return this.tables.post.names ? this.tables.post?.names[index].name : ''
   }
 
   getGlyphByChar(char: string) {
     assert(this.fontDirectory.table.cmap)
 
     const us = uniString(char)
-    const cmap = this.getCmap()
+    const glyphIndexMap = this.getGlyphIndexMap()
 
-    return this.readGlyph(cmap[us.codePointAt(us.length - 1)])
+    try {
+      return this.readGlyph(glyphIndexMap[us.codePointAt(us.length - 1)] ?? 0)
+    } catch {
+      return this.readGlyph(0)
+    }
   }
 
   getGlyphByUnicode(code: number) {
     assert(this.fontDirectory.table.cmap)
 
-    const cmap = this.getCmap()
-
-    return this.readGlyph(cmap[code])
+    const cmap = this.getGlyphIndexMap()
+    try {
+      return this.readGlyph(cmap[code])
+    } catch {
+      return this.readGlyph(0)
+    }
   }
 
-  readGlyph(index: number): Glyph | null {
+  getGlyphByName(name: string) {
+    assert(this.fontDirectory.table.cmap)
+
+    if (this.tables.post.names) {
+      const nameEntry = Object.entries(this.tables.post.names).find(
+        (entry: any) => entry[1].name === name
+      ) as any
+
+      return this.readGlyph(nameEntry ? nameEntry[0] : 0)
+    }
+
+    return this.readGlyph(0)
+  }
+
+  readGlyph(glyphIndex: number): Glyph | null {
     assert(this.fontDirectory.table.glyf)
 
     const table = this.fontDirectory.table.glyf
-    const cmap = this.getCmap()
-    const { offset, length } = this.getGlyphOffset(index)
+    const glyphIndexMap = this.getGlyphIndexMap()
+
+    const { offset, length } = this.getGlyphOffset(glyphIndex)
 
     if (offset === null) return null
 
@@ -1366,18 +1297,24 @@ class TrueTypeFont {
       tables: { hmtx },
     } = this
 
-    const { advanceWidth, leftSideBearing } = (hmtx.hMetrics[index] ?? {
+    const { advanceWidth, leftSideBearing } = (hmtx.hMetrics[glyphIndex] ?? {
       advanceWidth: 0,
       leftSideBearing: 0,
     }) as LongHorMetric
 
     if (offset >= table.offset + table.length) return null
 
+    const characterCode = Object.entries(glyphIndexMap).find(
+      entry => entry[1] === glyphIndex
+    )
+
     const glyph: Glyph = {
       advanceWidth,
       leftSideBearing,
-      unicode: this.getUnicode(cmap, index),
-      name: this.getGlyphName(index),
+      characterCode: characterCode ? parseInt(characterCode[0], 10) : 0,
+      unicode: this.getUnicode(glyphIndexMap, glyphIndex),
+      name: this.getGlyphName(glyphIndex),
+      glyphIndex,
       numberOfContours: 0,
       xMax: 0,
       xMin: 0,
@@ -1391,6 +1328,7 @@ class TrueTypeFont {
       const numberOfContours = reader.getInt16()
 
       glyph.numberOfContours = numberOfContours
+
       glyph.xMin = reader.getFword()
       glyph.yMin = reader.getFword()
       glyph.xMax = reader.getFword()
@@ -1426,30 +1364,47 @@ class TrueTypeFont {
     }: CreateSvgOptions
   ) {
     const createGlyph = (
-      glyph: Partial<Glyph> = { points: [], endPtsOfContours: [] },
+      glyph: Partial<Glyph> = { points: [], endPtsOfContours: [0] },
       height = 0,
       scale = 1
     ) => {
-      const points = glyph.points || []
-      const length = points.length
+      const points = glyph.points ?? []
       const docFrag = document.createDocumentFragment()
+      const lengthPoints = points.length
+      const refPoints: SVGCircleElement[] = []
 
-      let first = true
-      let p = 0
-      let c = 0
+      let isFirstContourPoint = true
+      let pointIndex = 0
+      let contourNumber = 0
       let path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
       let d = ''
-      let refPoints: any[] = []
-      let ctrlPoints: any[] = []
-      let p0 = null
+      let ctrlPoints: Point[] = []
+      let firstContourPoint: Point | null = null
 
-      while (p < length) {
-        const point: any = points[p]
+      /**
+       * If the first point in a contour is not on a curve, the drawing of the glyph does not work correctly.
+       * Therefor the next point ont he curve is used as the first point.
+       */
+
+      glyph.endPtsOfContours?.forEach((endPtOfContour, i) => {
+        const firstPointIndex = i === 0 ? 0 : glyph.endPtsOfContours![i - 1] + 1
+        const firstPoint = points[firstPointIndex]
+
+        if (!firstPoint.onCurve) {
+          const [lastPoint] = points.splice(endPtOfContour, 1)
+
+          points.splice(firstPointIndex, 1, lastPoint, firstPoint)
+        }
+      })
+
+      while (pointIndex < lengthPoints) {
+        const point = points[pointIndex]
         const x = point.x * scale
         const y = height - point.y * scale
 
-        if (first) {
-          p0 = point
+        if (isFirstContourPoint) {
+          firstContourPoint = point
+
           d += `M ${x} ${y}`
 
           path.setAttribute('d', d)
@@ -1461,39 +1416,29 @@ class TrueTypeFont {
             refPoints.push(createCircle(x, y, 'orange', scale))
           }
 
-          first = false
+          isFirstContourPoint = false
         } else {
           if (point.onCurve) {
-            if (ctrlPoints.length) {
-              //@ts-ignore
-              d += drawCurves(ctrlPoints, point, height, scale)
-            } else {
-              d += ` L ${x} ${y}`
-            }
+            if (ctrlPoints.length) d += drawCurves(ctrlPoints, point, height, scale)
+            else d += ` L ${x} ${y}`
 
             path.setAttribute('d', d)
 
-            if (showPoints) {
-              refPoints.push(createCircle(x, y, 'blue', scale))
-            }
+            if (showPoints) refPoints.push(createCircle(x, y, 'blue', scale))
           } else {
             ctrlPoints.push(point)
 
-            if (showPoints) {
-              refPoints.push(createCircle(x, y, 'red', scale))
-            }
+            if (showPoints) refPoints.push(createCircle(x, y, 'red', scale))
           }
         }
 
-        if (p === glyph.endPtsOfContours![c]) {
-          c += 1
+        if (pointIndex === glyph.endPtsOfContours![contourNumber]) {
+          contourNumber += 1
 
-          first = true
+          isFirstContourPoint = true
 
-          if (!point.onCurve) {
-            //@ts-ignore
-            d += drawCurves(ctrlPoints, p0, height, scale)
-          }
+          if (!point.onCurve)
+            d += drawCurves(ctrlPoints, firstContourPoint!, height, scale)
 
           path.setAttribute('d', d)
 
@@ -1510,17 +1455,15 @@ class TrueTypeFont {
             )
           }
 
-          p0 = null
+          firstContourPoint = null
 
           ctrlPoints = []
         }
 
-        p += 1
+        pointIndex += 1
       }
 
-      while (refPoints.length) {
-        docFrag.appendChild(refPoints.pop())
-      }
+      while (refPoints.length) docFrag.appendChild(refPoints.pop() as Node)
 
       return docFrag
     }

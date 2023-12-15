@@ -62,7 +62,7 @@ const mapNameId = (id: number) => {
     },
   }
 
-  const name = names[id]
+  const name = names[id] ?? { name: 'unknown' }
 
   if (name) name.id = id
 

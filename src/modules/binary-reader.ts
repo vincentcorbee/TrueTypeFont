@@ -13,7 +13,8 @@ export const getBitCount = (number: number) => {
 
 class BinaryReader {
   public view: DataView
-  public pos: number
+
+  private pos: number
   private bit_pos: number
   private chunk: any
   private bit_count: number
@@ -46,6 +47,14 @@ class BinaryReader {
     return oldPos
   }
 
+  goTo(pos: number) {
+    assert(pos >= 0 && pos <= this.view.byteLength)
+
+    this.pos = pos
+
+    return this
+  }
+
   peak(index = this.pos + 1) {
     if (this.view.byteLength > index && index > -1) return this.view.getUint8(index)
 
@@ -71,9 +80,7 @@ class BinaryReader {
     if (this.chunk === null) {
       return 0
     } else {
-      const bit_count = getBitCount(this.chunk)
-
-      return 8 - bit_count
+      return 8 - getBitCount(this.chunk)
     }
   }
 
@@ -159,6 +166,16 @@ class BinaryReader {
     )
   }
 
+  getString(length: number) {
+    let result = ''
+
+    for (let i = 0; i < length; i++) {
+      result += String.fromCharCode(this.getUint8())
+    }
+
+    return result
+  }
+
   getFword() {
     return this.getInt16()
   }
@@ -173,16 +190,6 @@ class BinaryReader {
 
   getFixed() {
     return this.getInt32() / (1 << 16)
-  }
-
-  getString(length: number) {
-    let result = ''
-
-    for (let i = 0; i < length; i++) {
-      result += String.fromCharCode(this.getUint8())
-    }
-
-    return result
   }
 
   getLongDateTime() {
