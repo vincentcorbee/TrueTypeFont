@@ -156,7 +156,7 @@ export type platformSpecificEncoding =
   | 'Unicode 1.0 semantics'
   | "Unicode 2.0 and onwards semantics, Unicode BMP only ('cmap' subtable formats 0, 4, 6)"
 
-export type Platform = 'Microsoft' | 'Macintosh' | 'Unicode'
+export type Platform = 'Microsoft' | 'Macintosh' | 'Unicode' | 'ISO' | 'Unknown'
 
 export type HmtxTable = {
   hMetrics: LongHorMetric[]

@@ -1,4 +1,4 @@
-import assert from '../lib/assert'
+import assert from '../helpers/assert'
 
 export const getBitCount = (number: number) => {
   let bit_count = 0

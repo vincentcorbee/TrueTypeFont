@@ -2,41 +2,17 @@
   "name": "@digitalbranch/font",
   "version": "1.0.0",
   "description": "A true type font reader",
-  "main": "src/modules/TrueTypeFont.ts",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
   "scripts": {
-    "check-types": "tsc",
-    "build": "node ./build/deploy/build.js",
-    "deploy": "node ./build/deploy/deploy.js",
-    "start": "webpack-dev-server --open --config ./webpack/webpack.dev.js"
+    "build": "rm -rf dist && tsc -p tsconfig.build.json"
   },
   "repository": {},
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@babel/cli": "^7.2.0",
-    "@babel/core": "^7.2.0",
-    "@babel/preset-env": "^7.20.2",
-    "@babel/preset-typescript": "^7.18.6",
-    "ajv": "^6.5.2",
-    "autoprefixer": "^9.1.0",
-    "babel-loader": "^8.0.4",
-    "chalk": "^2.4.1",
-    "clean-webpack-plugin": "^0.1.19",
-    "copy-webpack-plugin": "^4.5.2",
-    "css-loader": "^1.0.0",
-    "file-loader": "^1.1.11",
-    "html-loader": "^0.5.5",
-    "html-webpack-plugin": "^3.2.0",
-    "mini-css-extract-plugin": "^0.4.1",
-    "postcss-loader": "^2.1.6",
-    "sass": "^1.56.1",
-    "sass-loader": "^7.1.0",
-    "style-loader": "^0.21.0",
-    "typescript": "^3.3.4000",
-    "url-loader": "^1.0.1",
-    "webpack": "^4.16.5",
-    "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.2.1",
-    "webpack-merge": "^4.1.4"
+    "@types/node": "^20.10.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
